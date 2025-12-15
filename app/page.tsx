@@ -22,8 +22,11 @@ export default function Home() {
         )
       );
 
+      const base64NoPadding = base64Text.replace(/=+$/, '');
+
+
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      setShareLink(`${origin}/share/${base64Text}`);
+      setShareLink(`${origin}/share/${base64NoPadding}`);
     } catch (error) {
       console.error(error);
     }
