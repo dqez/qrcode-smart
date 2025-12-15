@@ -3,10 +3,11 @@ import QRCode from "qrcode";
 import Link from "next/link";
 
 type Props = {
-  params: { text: string };
+  params: Promise<{ text: string }>;
 };
 
-export async function genMetadata({ params }: Props) {
+export async function genMetadata(props: Props) {
+  const params = await props.params;
 
   const ogImageUrl = `${process.env.VERCEL_URL || 'http:localhost:3000'}/api/og?text=${params.text}`;
 
@@ -28,7 +29,10 @@ export async function genMetadata({ params }: Props) {
   };
 }
 
-export default async function SharePage({ params }: Props) {
+export default async function SharePage(props: Props) {
+
+  const params = await props.params;
+
   const decodedText = Buffer.from(params.text, 'base64').toString('utf8');
   const qrDataUrl = await QRCode.toDataURL(decodedText, { width: 300 });
 
