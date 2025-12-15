@@ -36,7 +36,7 @@ export default async function SharePage(props: Props) {
 
   const params = await props.params;
 
-  const decodedText = Buffer.from(params.text, 'base64').toString('utf8');
+  const decodedText = Buffer.from(params.text, 'base64').toString('utf-8');
   const qrDataUrl = await QRCode.toDataURL(decodedText, { width: 300 });
 
   return (
