@@ -6,10 +6,15 @@ type Props = {
   params: Promise<{ text: string }>;
 };
 
-export async function genMetadata(props: Props) {
+export async function generateMetadata(props: Props) {
+
   const params = await props.params;
 
-  const ogImageUrl = `${process.env.VERCEL_URL || 'http:localhost:3000'}/api/og?text=${params.text}`;
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000';
+
+  const ogImageUrl = `${baseUrl}/api/og?text=${params.text}`;
 
   return {
     title: 'QRCode',
