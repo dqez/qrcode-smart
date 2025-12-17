@@ -4,12 +4,12 @@ import { getFirestore } from "firebase/firestore";
 
 // TODO: Replace the following with your app's Firebase project configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCM7yAbcVXNHa_L66GZNmtrSjQqEuPj7jY",
-  authDomain: "qrcodesmart-59401.firebaseapp.com",
-  projectId: "qrcodesmart-59401",
-  storageBucket: "qrcodesmart-59401.firebasestorage.app",
-  messagingSenderId: "958377814940",
-  appId: "1:958377814940:web:c76484fab2c616bcaaf659"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
