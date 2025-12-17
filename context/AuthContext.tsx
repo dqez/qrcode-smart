@@ -4,8 +4,10 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import {
   User,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  getRedirectResult
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
@@ -23,26 +25,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const signInWithGoogle = async () => {
+  // Hàm xử lý lưu user vào Firestore (Tách riêng để tái sử dụng)
+  const saveUserToFirestore = async (user: User) => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
-      // Check if user exists in Firestore
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        // Create new user document
         await setDoc(userRef, {
           uid: user.uid,
           email: user.email,
@@ -52,10 +41,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           lastLogin: serverTimestamp(),
         });
       } else {
-        // Update last login
         await setDoc(userRef, {
           lastLogin: serverTimestamp(),
         }, { merge: true });
+      }
+    } catch (error) {
+      console.error("Error saving user to Firestore:", error);
+    }
+  };
+
+  useEffect(() => {
+    // 1. Lắng nghe trạng thái đăng nhập
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+
+    // 2. Xử lý kết quả trả về nếu dùng signInWithRedirect (Cho Mobile)
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // Nếu đăng nhập thành công qua Redirect, lưu thông tin vào Firestore
+          saveUserToFirestore(result.user);
+        }
+      })
+      .catch((error) => {
+        console.error("Error with redirect login:", error);
+      });
+
+    return () => unsubscribe();
+  }, []);
+
+  const signInWithGoogle = async () => {
+    try {
+      // Kiểm tra đơn giản xem có phải thiết bị mobile không
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        // Nếu là Mobile: Dùng Redirect để tránh lỗi chặn popup
+        await signInWithRedirect(auth, googleProvider);
+        // Lưu ý: Code phía sau dòng này sẽ KHÔNG chạy ngay lập tức vì trang web sẽ bị chuyển hướng.
+        // Việc lưu Firestore sẽ được xử lý bởi getRedirectResult trong useEffect.
+      } else {
+        // Nếu là Desktop: Dùng Popup cho tiện
+        const result = await signInWithPopup(auth, googleProvider);
+        // Với Popup, code chạy tiếp tục ngay tại đây
+        await saveUserToFirestore(result.user);
       }
     } catch (error) {
       console.error("Error signing in with Google", error);
