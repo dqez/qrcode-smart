@@ -1,28 +1,44 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import QRCode from "qrcode";
 import Link from "next/link";
+import { useTheme } from "next-themes";
+import { UserMenu } from "@/components/UserMenu";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
+  const { user } = useAuth();
   const [input, setInput] = useState('');
   const [qrSrc, setQrSrc] = useState('');
   const [shareLink, setShareLink] = useState('');
   const [loading, setLoading] = useState(false);
   const [base64NoPadding, setBase64NoPadding] = useState('');
   const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  // QR Code Colors
+  const [qrDarkColor, setQrDarkColor] = useState('#000000');
+  const [qrLightColor, setQrLightColor] = useState('#ffffff');
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     if (!input) return;
     setLoading(true);
 
     try {
-      const url = await QRCode.toDataURL(input, { width: 400, margin: 2, color: { dark: '#000000', light: '#ffffff' } });
+      const url = await QRCode.toDataURL(input, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: user ? qrDarkColor : '#000000',
+          light: user ? qrLightColor : '#ffffff'
+        }
+      });
       setQrSrc(url);
 
       const base64Text = btoa(
@@ -41,7 +57,18 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [input, user, qrDarkColor, qrLightColor]);
+
+  // Realtime generation with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (input) {
+        handleGenerate();
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [handleGenerate, input]);
 
   const downloadQR = () => {
     if (!qrSrc) return;
@@ -88,10 +115,23 @@ export default function Home() {
             <span>QRCode<span className="text-indigo-600 dark:text-indigo-400">Smart</span></span>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                </svg>
+              )}
+            </button>
             <a href="#api" className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">API</a>
-            <a href="https://github.com" target="_blank" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:opacity-90 transition-all">
-              <span>Star on GitHub</span>
-            </a>
+            <UserMenu />
           </div>
         </div>
       </nav>
@@ -173,6 +213,70 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Color Pickers */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="dark-color" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        Dots Color
+                      </label>
+                      {!user && (
+                        <span className="text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-500 px-1.5 py-0.5 rounded">SIGN IN</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <input
+                          id="dark-color"
+                          type="color"
+                          value={user ? qrDarkColor : '#000000'}
+                          onChange={(e) => setQrDarkColor(e.target.value)}
+                          disabled={!user}
+                          className={`h-10 w-14 p-1 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg ${!user ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        />
+                        {!user && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-neutral-500">
+                              <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase">{user ? qrDarkColor : '#000000'}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="light-color" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        Background Color
+                      </label>
+                      {!user && (
+                        <span className="text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-500 px-1.5 py-0.5 rounded">SIGN IN</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <input
+                          id="light-color"
+                          type="color"
+                          value={user ? qrLightColor : '#ffffff'}
+                          onChange={(e) => setQrLightColor(e.target.value)}
+                          disabled={!user}
+                          className={`h-10 w-14 p-1 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg ${!user ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        />
+                        {!user && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-neutral-500">
+                              <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase">{user ? qrLightColor : '#ffffff'}</span>
+                    </div>
+                  </div>
+                </div>
+
                 {qrSrc && (
                   <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pt-6 border-t border-neutral-100 dark:border-neutral-800">
                     <div className="flex flex-col sm:flex-row gap-6">
@@ -180,7 +284,7 @@ export default function Home() {
                         <img src={qrSrc} alt="Generated QR" className="w-32 h-32 sm:w-40 sm:h-40" />
                       </div>
 
-                      <div className="flex-1 space-y-3">
+                      <div className="flex-1 space-y-3 min-w-0">
                         <div className="grid grid-cols-2 gap-2">
                           <button
                             onClick={downloadQR}
@@ -265,6 +369,83 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Use Cases & Integration */}
+        <div className="max-w-6xl mx-auto mt-32">
+          <div className="grid lg:grid-cols-2 gap-16">
+
+            {/* Use Cases */}
+            <div className="space-y-8">
+              <h2 className="text-3xl font-bold tracking-tight">Endless Possibilities</h2>
+              <p className="text-lg text-neutral-600 dark:text-neutral-400">
+                From e-commerce to events, QRCodeSmart powers the next generation of physical-to-digital interactions.
+              </p>
+
+              <div className="space-y-6">
+                {[
+                  {
+                    title: "E-Commerce",
+                    desc: "Generate dynamic QR codes for product packaging that link to manuals, reviews, or reorder pages.",
+                    color: "bg-blue-500"
+                  },
+                  {
+                    title: "Event Management",
+                    desc: "Create unique ticket QR codes that can be scanned for entry validation.",
+                    color: "bg-purple-500"
+                  },
+                  {
+                    title: "Digital Marketing",
+                    desc: "Track campaign performance with dynamic QR codes on billboards and flyers.",
+                    color: "bg-pink-500"
+                  }
+                ].map((item, i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className={`w-1.5 h-full min-h-12 rounded-full ${item.color} opacity-80`}></div>
+                    <div>
+                      <h3 className="font-bold text-lg">{item.title}</h3>
+                      <p className="text-neutral-600 dark:text-neutral-400">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Integration Example */}
+            <div className="space-y-8">
+              <h2 className="text-3xl font-bold tracking-tight">Seamless Integration</h2>
+              <p className="text-lg text-neutral-600 dark:text-neutral-400">
+                Embed dynamic QR codes directly into your applications with a simple image tag.
+              </p>
+
+              <div className="bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800 shadow-2xl">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-neutral-950/50">
+                  <div className="text-xs font-mono text-neutral-500">index.html</div>
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-neutral-700"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-neutral-700"></div>
+                  </div>
+                </div>
+                <div className="p-6 overflow-x-auto">
+                  <pre className="font-mono text-sm leading-relaxed">
+                    <code className="text-neutral-300">
+                      <span className="text-blue-400">&lt;img</span>{"\n"}
+                      {"  "}src=<span className="text-green-400">&quot;https://qrcode-smart.vercel.app/api/og?content=https://myapp.com/user/123&quot;</span>{"\n"}
+                      {"  "}alt=<span className="text-green-400">&quot;User Profile QR&quot;</span>{"\n"}
+                      {"  "}width=<span className="text-green-400">&quot;200&quot;</span>{"\n"}
+                      {"  "}height=<span className="text-green-400">&quot;200&quot;</span>{"\n"}
+                      <span className="text-blue-400">/&gt;</span>
+                    </code>
+                  </pre>
+                </div>
+              </div>
+
+              <div className="p-4 bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-lg text-sm text-indigo-800 dark:text-indigo-300">
+                <strong>Pro Tip:</strong> You can dynamically change the `content` parameter in your code to generate unique QRs for every user or item.
+              </div>
+            </div>
+
+          </div>
+        </div>
+
         {/* API Section */}
         <div id="api" className="max-w-4xl mx-auto mt-32 mb-20">
           <div className="bg-neutral-900 dark:bg-black rounded-2xl overflow-hidden shadow-2xl border border-neutral-800">
@@ -285,7 +466,7 @@ export default function Home() {
                   <div className="flex items-center gap-2 text-indigo-400 whitespace-nowrap">
                     <span className="text-purple-400 font-bold">GET</span>
                     <span className="text-white">/api/og</span>
-                    <span className="text-neutral-500">?text=...&bg=...&dark=...&light=...&title=...</span>
+                    <span className="text-neutral-500">?content=...&text=...&bg=...&dark=...&light=...&title=...</span>
                   </div>
                 </div>
               </div>
@@ -294,6 +475,13 @@ export default function Home() {
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">Parameters</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-mono text-sm text-indigo-400 font-bold">content</span>
+                      <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full uppercase font-bold">New</span>
+                    </div>
+                    <div className="text-xs text-neutral-400">Raw text or URL (No Base64 encoding needed).</div>
+                  </div>
                   <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-mono text-sm text-indigo-400 font-bold">text</span>
@@ -340,11 +528,11 @@ export default function Home() {
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">Example Usage</h3>
                 <div className="font-mono text-xs bg-neutral-950 p-4 rounded-lg border border-neutral-800 overflow-x-auto text-neutral-400">
-                  <span className="text-green-400">https://qr-preview-app.vercel.app/api/og</span>
-                  <span className="text-indigo-400">?text=</span>SGVsbG8=
+                  <span className="text-green-400">https://qrcode-smart.vercel.app/api/og</span>
+                  <span className="text-indigo-400">?content=</span>Hello%20QRCodeSmart
                   <span className="text-indigo-400">&bg=</span>F3F4F6
                   <span className="text-indigo-400">&dark=</span>2563EB
-                  <span className="text-indigo-400">&title=</span>Scan%20Me
+                  {/* <span className="text-indigo-400">&title=</span>Scan%20Me */}
                 </div>
               </div>
 

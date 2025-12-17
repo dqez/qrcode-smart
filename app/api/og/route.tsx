@@ -1,33 +1,51 @@
 /* eslint-disable @next/next/no-img-element */
 import { ImageResponse } from "next/og";
 import QRCode from "qrcode";
+// import { checkDomainAndPlan } from "@/lib/saas-logic"; // Hàm check DB của bạn
 
-export const runtime = 'nodejs';
+export const runtime = 'nodejs'; // ImageResponse + qrcode cần Nodejs
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const text = searchParams.get('text');
+    const content = searchParams.get('content'); // Ưu tiên content
 
-    // Customization params
-    const darkColor = '#' + (searchParams.get('dark') || '000000').replace('#', '');
-    const lightColor = '#' + (searchParams.get('light') || 'ffffff').replace('#', '');
+    // SaaS Security: Lấy Referer để check xem request từ đâu đến
+    const referer = request.headers.get('referer') || '';
+
+    // --- BƯỚC 1: SAAS LOGIC (Check Plan & Domain) ---
+    // Giả lập logic check DB (Bạn thay bằng code Firebase/Mongo thật)
+    // const { isAllowed, isPro } = await checkDomainAndPlan(referer); 
+
+    const isPro = true; // Test tạm
+    const isAllowed = true; // Test tạm
+
+    if (!isAllowed) {
+      // Nếu domain ăn cắp link -> Trả về ảnh lỗi hoặc ảnh mờ
+      return new Response('Unauthorized Domain', { status: 403 });
+    }
+
+    // --- BƯỚC 2: CUSTOMIZATION ---
+    // user Pro được chỉnh màu, user Free bị ép về màu đen/trắng
+    const darkColor = isPro ? ('#' + (searchParams.get('dark') || '000000').replace('#', '')) : '#000000';
+    const lightColor = isPro ? ('#' + (searchParams.get('light') || 'ffffff').replace('#', '')) : '#ffffff';
     const bgColor = '#' + (searchParams.get('bg') || 'ffffff').replace('#', '');
     const title = searchParams.get('title');
 
-    if (!text) {
-      return new ImageResponse(
-        <div style={{ display: 'flex', fontSize: 40, color: 'black', background: 'white', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-          No content provided
-        </div>,
-        { width: 1200, height: 630 }
-      );
+    // Cho phép chỉnh size (mặc định 400)
+    const size = parseInt(searchParams.get('size') || '400');
+    const clampedSize = Math.min(Math.max(size, 200), 1200); // Giới hạn 200px - 1200px
+
+    if (!text && !content) {
+      return new Response('No content provided', { status: 400 });
     }
 
-    const decodedText = Buffer.from(text, 'base64').toString('utf8');
+    const decodedText = content || Buffer.from(text || '', 'base64').toString('utf8');
 
+    // Tạo QR Data URL
     const qrDataUrl = await QRCode.toDataURL(decodedText, {
-      width: 600,
+      width: 600, // Render to để nét
       margin: 2,
       color: {
         dark: darkColor,
@@ -35,7 +53,8 @@ export async function GET(request: Request) {
       },
     });
 
-    return new ImageResponse(
+    // --- BƯỚC 3: RENDER ẢNH ---
+    const imageResponse = new ImageResponse(
       (
         <div
           style={{
@@ -50,38 +69,27 @@ export async function GET(request: Request) {
             position: 'relative',
           }}
         >
-          {/* Decorative Circles */}
+          {/* Decorative Circles - Chỉ hiện nếu size đủ lớn */}
           <div style={{
             position: 'absolute',
-            top: -50,
-            left: -50,
-            width: 300,
-            height: 300,
-            borderRadius: '50%',
-            backgroundColor: darkColor,
-            opacity: 0.05,
+            top: -50, left: -50, width: clampedSize * 0.75, height: clampedSize * 0.75,
+            borderRadius: '50%', backgroundColor: darkColor, opacity: 0.05,
           }} />
           <div style={{
             position: 'absolute',
-            bottom: -50,
-            right: -50,
-            width: 300,
-            height: 300,
-            borderRadius: '50%',
-            backgroundColor: darkColor,
-            opacity: 0.05,
+            bottom: -50, right: -50, width: clampedSize * 0.75, height: clampedSize * 0.75,
+            borderRadius: '50%', backgroundColor: darkColor, opacity: 0.05,
           }} />
 
           {title && (
             <div style={{
-              fontSize: 70,
+              fontSize: clampedSize * 0.1, // Font size responsive theo size ảnh
               fontWeight: 900,
               color: darkColor,
-              marginBottom: 40,
+              marginBottom: clampedSize * 0.05,
               textAlign: 'center',
               maxWidth: '85%',
               lineHeight: 1.1,
-              letterSpacing: '-0.03em',
             }}>
               {title}
             </div>
@@ -89,36 +97,41 @@ export async function GET(request: Request) {
 
           <div style={{
             display: 'flex',
-            padding: 32,
+            padding: clampedSize * 0.05, // Padding responsive
             backgroundColor: lightColor,
-            borderRadius: 48,
+            borderRadius: clampedSize * 0.1,
             boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.25)',
           }}>
-            <img src={qrDataUrl} width="400" height="400" alt="QR Code" />
+            <img src={qrDataUrl} width={clampedSize * 0.6} height={clampedSize * 0.6} alt="QR Code" />
           </div>
 
-          {/* Branding Footer */}
-          <div style={{
-            position: 'absolute',
-            bottom: 40,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            opacity: 0.6,
-          }}>
-            <div style={{ fontSize: 24, fontWeight: 600, color: darkColor }}>QRCode Smart</div>
-          </div>
+          {/* Branding - Nếu không phải Pro thì bắt buộc hiện branding của bạn */}
+          {(!isPro || searchParams.get('branding') === 'true') && (
+            <div style={{
+              position: 'absolute',
+              bottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              opacity: 0.6,
+            }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: darkColor }}>Powered by QRCode Smart</div>
+            </div>
+          )}
         </div>
       ),
       {
-        width: 400,
-        height: 400,
+        width: clampedSize,
+        height: clampedSize,
       }
     );
 
+    // Cache ở CDN (Vercel Edge) và Browser trong 1 ngày (86400s)
+    imageResponse.headers.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
 
+    return imageResponse;
 
   } catch (error) {
-    return new Response(`Failed to generate the image: ${error}`, { status: 500 });
+    console.error(error);
+    return new Response(`Failed to generate: ${error}`, { status: 500 });
   };
 }

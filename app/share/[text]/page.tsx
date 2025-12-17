@@ -8,7 +8,7 @@ type Props = {
 
 export async function generateMetadata(props: Props) {
   const params = await props.params;
-  const domain = 'https://qr-preview-app.vercel.app'; // Ideally env var
+  const domain = 'https://qrcode-smart.vercel.app'; // Ideally env var
   const ogImageUrl = `${domain}/api/og?text=${params.text}&title=Scan%20Me`;
 
   return {
