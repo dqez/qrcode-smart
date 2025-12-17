@@ -3,11 +3,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import {
   User,
-  signInWithPopup,
-  signInWithRedirect,
+  signInWithRedirect, // Chỉ dùng cái này
   signOut,
   onAuthStateChanged,
-  getRedirectResult
+  getRedirectResult // Hàm quan trọng để bắt kết quả sau khi redirect
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
@@ -25,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Hàm xử lý lưu user vào Firestore (Tách riêng để tái sử dụng)
+  // Hàm xử lý lưu user vào Firestore
   const saveUserToFirestore = async (user: User) => {
     try {
       const userRef = doc(db, "users", user.uid);
@@ -51,45 +50,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // 1. Lắng nghe trạng thái đăng nhập
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-
-    // 2. Xử lý kết quả trả về nếu dùng signInWithRedirect (Cho Mobile)
+    // 1. Xử lý kết quả trả về sau khi Redirect (Lưu vào DB ở đây)
+    // Hàm này chỉ chạy 1 lần khi trang web load lại sau khi đăng nhập thành công
     getRedirectResult(auth)
       .then((result) => {
         if (result) {
-          // Nếu đăng nhập thành công qua Redirect, lưu thông tin vào Firestore
+          console.log("Redirect login successful");
           saveUserToFirestore(result.user);
         }
       })
       .catch((error) => {
-        console.error("Error with redirect login:", error);
+        console.error("Redirect login error:", error);
       });
+
+    // 2. Lắng nghe trạng thái đăng nhập (Cập nhật UI state ở đây)
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
 
     return () => unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {
     try {
-      // Kiểm tra đơn giản xem có phải thiết bị mobile không
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      // Đơn giản hóa: Luôn dùng Redirect cho mọi thiết bị
+      await signInWithRedirect(auth, googleProvider);
 
-      if (isMobile) {
-        // Nếu là Mobile: Dùng Redirect để tránh lỗi chặn popup
-        await signInWithRedirect(auth, googleProvider);
-        // Lưu ý: Code phía sau dòng này sẽ KHÔNG chạy ngay lập tức vì trang web sẽ bị chuyển hướng.
-        // Việc lưu Firestore sẽ được xử lý bởi getRedirectResult trong useEffect.
-      } else {
-        // Nếu là Desktop: Dùng Popup cho tiện
-        const result = await signInWithPopup(auth, googleProvider);
-        // Với Popup, code chạy tiếp tục ngay tại đây
-        await saveUserToFirestore(result.user);
-      }
+      // LƯU Ý QUAN TRỌNG:
+      // Không viết code xử lý db hay console.log ở đây.
+      // Vì trình duyệt sẽ chuyển hướng ngay lập tức, code phía dưới sẽ không kịp chạy.
+      // Mọi logic xử lý sau đăng nhập phải nằm trong getRedirectResult ở useEffect trên.
     } catch (error) {
-      console.error("Error signing in with Google", error);
+      console.error("Error initiating google sign in", error);
     }
   };
 
