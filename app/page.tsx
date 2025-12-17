@@ -105,19 +105,19 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans selection:bg-indigo-500/30">
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 border-b border-neutral-200/50 dark:border-neutral-800/50 bg-white/60 dark:bg-neutral-950/60 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
+        <div className="max-w-6xl mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 font-bold text-lg sm:text-xl tracking-tight">
             <div className="w-8 h-8 bg-linear-to-br from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                 <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h-2v2h2v-2zm-2 2h-2v2h2v-2zm2-2h2v2h-2v-2zm0 4h-2v2h2v-2z" />
               </svg>
             </div>
-            <span>QRCode<span className="text-indigo-600 dark:text-indigo-400">Smart</span></span>
+            <span>QRCode <span className="text-indigo-600 dark:text-indigo-400">Smart</span></span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+              className="p-2.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
@@ -130,14 +130,14 @@ export default function Home() {
                 </svg>
               )}
             </button>
-            <a href="#api" className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">API</a>
+            <a href="#api" className="hidden sm:block text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">API</a>
             <UserMenu />
           </div>
         </div>
       </nav>
 
-      <main className="flex-1 pt-32 pb-20 px-4">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+      <main className="flex-1 pt-16 lg:pt-32 pb-12 lg:pb-20 px-4">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-6 lg:gap-12 items-center">
 
           {/* Hero Content */}
           <div className="space-y-8 text-center lg:text-left">
@@ -214,14 +214,14 @@ export default function Home() {
                 </div>
 
                 {/* Color Pickers */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label htmlFor="dark-color" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                         Dots Color
                       </label>
                       {!user && (
-                        <span className="text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-500 px-1.5 py-0.5 rounded">SIGN IN</span>
+                        <span className="text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-500 px-1.5 py-0.5 rounded">SIGN IN</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ export default function Home() {
                           value={user ? qrDarkColor : '#000000'}
                           onChange={(e) => setQrDarkColor(e.target.value)}
                           disabled={!user}
-                          className={`h-10 w-14 p-1 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg ${!user ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          className={`h-11 w-16 p-1 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg ${!user ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                         />
                         {!user && (
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -251,7 +251,7 @@ export default function Home() {
                         Background Color
                       </label>
                       {!user && (
-                        <span className="text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-500 px-1.5 py-0.5 rounded">SIGN IN</span>
+                        <span className="text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-500 px-1.5 py-0.5 rounded">SIGN IN</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
@@ -262,7 +262,7 @@ export default function Home() {
                           value={user ? qrLightColor : '#ffffff'}
                           onChange={(e) => setQrLightColor(e.target.value)}
                           disabled={!user}
-                          className={`h-10 w-14 p-1 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg ${!user ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          className={`h-11 w-16 p-1 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg ${!user ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                         />
                         {!user && (
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -325,8 +325,8 @@ export default function Home() {
         </div>
 
         {/* Features Grid */}
-        <div className="max-w-6xl mx-auto mt-32">
-          <div className="grid md:grid-cols-3 gap-8">
+        <div className="max-w-6xl mx-auto mt-16 lg:mt-32">
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
             {[
               {
                 title: "Smart Clipboard",
@@ -370,8 +370,8 @@ export default function Home() {
         </div>
 
         {/* Use Cases & Integration */}
-        <div className="max-w-6xl mx-auto mt-32">
-          <div className="grid lg:grid-cols-2 gap-16">
+        <div className="max-w-6xl mx-auto mt-16 lg:mt-32">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-12 lg:gap-16">
 
             {/* Use Cases */}
             <div className="space-y-8">
@@ -398,11 +398,12 @@ export default function Home() {
                     color: "bg-pink-500"
                   }
                 ].map((item, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className={`w-1.5 h-full min-h-12 rounded-full ${item.color} opacity-80`}></div>
+                  <div key={i} className="flex gap-4 items-start"> {/* Thêm items-start */}
+                    {/* Sửa: Dùng self-stretch thay vì h-full, bỏ min-h-12 cứng nhắc */}
+                    <div className={`w-1.5 self-stretch rounded-full ${item.color} opacity-80 shrink-0`}></div>
                     <div>
-                      <h3 className="font-bold text-lg">{item.title}</h3>
-                      <p className="text-neutral-600 dark:text-neutral-400">{item.desc}</p>
+                      <h3 className="font-bold text-lg leading-tight mb-1">{item.title}</h3>
+                      <p className="text-neutral-600 dark:text-neutral-400 text-sm sm:text-base">{item.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -416,7 +417,7 @@ export default function Home() {
                 Embed dynamic QR codes directly into your applications with a simple image tag.
               </p>
 
-              <div className="bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800 shadow-2xl">
+              <div className="bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800 shadow-2xl w-full">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-neutral-950/50">
                   <div className="text-xs font-mono text-neutral-500">index.html</div>
                   <div className="flex gap-1.5">
@@ -424,8 +425,12 @@ export default function Home() {
                     <div className="w-2.5 h-2.5 rounded-full bg-neutral-700"></div>
                   </div>
                 </div>
-                <div className="p-6 overflow-x-auto">
-                  <pre className="font-mono text-sm leading-relaxed">
+
+                {/* FIX QUAN TRỌNG TẠI ĐÂY */}
+                {/* 1. Thay p-6 bằng p-4 sm:p-6 để tiết kiệm không gian trên mobile */}
+                {/* 2. Thêm max-w-[calc(100vw-4rem)] để ép container không vượt quá chiều rộng màn hình mobile */}
+                <div className="p-4 sm:p-6 overflow-x-auto w-full max-w-[calc(100vw-4rem)] md:max-w-none">
+                  <pre className="font-mono text-xs sm:text-sm leading-relaxed">
                     <code className="text-neutral-300">
                       <span className="text-blue-400">&lt;img</span>{"\n"}
                       {"  "}src=<span className="text-green-400">&quot;https://qrcode-smart.vercel.app/api/og?content=https://myapp.com/user/123&quot;</span>{"\n"}
@@ -447,7 +452,7 @@ export default function Home() {
         </div>
 
         {/* API Section */}
-        <div id="api" className="max-w-4xl mx-auto mt-32 mb-20">
+        <div id="api" className="max-w-4xl mx-auto mt-16 lg:mt-32 mb-12 lg:mb-20">
           <div className="bg-neutral-900 dark:bg-black rounded-2xl overflow-hidden shadow-2xl border border-neutral-800">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/50">
               <div className="flex items-center gap-2">
@@ -478,14 +483,14 @@ export default function Home() {
                   <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-mono text-sm text-indigo-400 font-bold">content</span>
-                      <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full uppercase font-bold">New</span>
+                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full uppercase font-bold">New</span>
                     </div>
                     <div className="text-xs text-neutral-400">Raw text or URL (No Base64 encoding needed).</div>
                   </div>
                   <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-mono text-sm text-indigo-400 font-bold">text</span>
-                      <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full uppercase font-bold">Required</span>
+                      <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full uppercase font-bold">Required</span>
                     </div>
                     <div className="text-xs text-neutral-400">Base64 encoded content for the QR code.</div>
                   </div>
@@ -493,7 +498,7 @@ export default function Home() {
                   <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-mono text-sm text-indigo-400 font-bold">bg</span>
-                      <span className="text-[10px] bg-neutral-700 text-neutral-400 px-2 py-0.5 rounded-full">Optional</span>
+                      <span className="text-xs bg-neutral-700 text-neutral-400 px-2 py-0.5 rounded-full">Optional</span>
                     </div>
                     <div className="text-xs text-neutral-400">Background color of the card (Hex without #).</div>
                   </div>
@@ -501,7 +506,7 @@ export default function Home() {
                   <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-mono text-sm text-indigo-400 font-bold">dark</span>
-                      <span className="text-[10px] bg-neutral-700 text-neutral-400 px-2 py-0.5 rounded-full">Optional</span>
+                      <span className="text-xs bg-neutral-700 text-neutral-400 px-2 py-0.5 rounded-full">Optional</span>
                     </div>
                     <div className="text-xs text-neutral-400">Color of the QR dots (Hex without #).</div>
                   </div>
@@ -509,7 +514,7 @@ export default function Home() {
                   <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-mono text-sm text-indigo-400 font-bold">light</span>
-                      <span className="text-[10px] bg-neutral-700 text-neutral-400 px-2 py-0.5 rounded-full">Optional</span>
+                      <span className="text-xs bg-neutral-700 text-neutral-400 px-2 py-0.5 rounded-full">Optional</span>
                     </div>
                     <div className="text-xs text-neutral-400">Background color of the QR code (Hex without #).</div>
                   </div>
@@ -517,7 +522,7 @@ export default function Home() {
                   <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-mono text-sm text-indigo-400 font-bold">title</span>
-                      <span className="text-[10px] bg-neutral-700 text-neutral-400 px-2 py-0.5 rounded-full">Optional</span>
+                      <span className="text-xs bg-neutral-700 text-neutral-400 px-2 py-0.5 rounded-full">Optional</span>
                     </div>
                     <div className="text-xs text-neutral-400">Title text displayed above the QR code.</div>
                   </div>
@@ -542,7 +547,7 @@ export default function Home() {
       </main>
 
       <footer className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-600 border-t border-neutral-200 dark:border-neutral-800">
-        <p>&copy; {new Date().getFullYear()} QRCode Smart. Built for the modern web.</p>
+        <p>&copy; {new Date().getFullYear()} QRCode Smart. Built for the modern web. | <a href="http://github.com/dqez">ZEQ</a></p>
       </footer>
     </div>
   );
