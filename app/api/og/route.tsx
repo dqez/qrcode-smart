@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { ImageResponse } from "next/og";
 import QRCode from "qrcode";
-// import { checkDomainAndPlan } from "@/lib/saas-logic"; // Hàm check DB của bạn
+import { checkDomainAllowed } from "@/lib/saas-logic";
 
 export const runtime = 'nodejs'; // ImageResponse + qrcode cần Nodejs
 
@@ -12,18 +12,16 @@ export async function GET(request: Request) {
     const content = searchParams.get('content'); // Ưu tiên content
 
     // SaaS Security: Lấy Referer để check xem request từ đâu đến
-    const referer = request.headers.get('referer') || '';
+    const referer = request.headers.get('referer') || request.headers.get('origin');
 
     // --- BƯỚC 1: SAAS LOGIC (Check Plan & Domain) ---
-    // Giả lập logic check DB (Bạn thay bằng code Firebase/Mongo thật)
-    // const { isAllowed, isPro } = await checkDomainAndPlan(referer); 
+    const isAllowed = await checkDomainAllowed(referer);
 
     const isPro = true; // Test tạm
-    const isAllowed = true; // Test tạm
 
     if (!isAllowed) {
       // Nếu domain ăn cắp link -> Trả về ảnh lỗi hoặc ảnh mờ
-      return new Response('Unauthorized Domain', { status: 403 });
+      return new Response('Unauthorized Domain: Please add your domain in the dashboard.', { status: 403 });
     }
 
     // --- BƯỚC 2: CUSTOMIZATION ---

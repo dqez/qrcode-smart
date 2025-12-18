@@ -2,6 +2,7 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
+import DomainManager from "@/components/DomainManager";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -49,6 +50,8 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <DomainManager />
     </div>
   );
 }
