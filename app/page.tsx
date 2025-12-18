@@ -1,12 +1,73 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, SVGProps } from "react";
 import QRCode from "qrcode";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { UserMenu } from "@/components/UserMenu";
 import { useAuth } from "@/context/AuthContext";
+
+const tiers = [
+  {
+    name: 'Free',
+    id: 'tier-free',
+    href: '#',
+    priceMonthly: '$0',
+    description: 'Perfect for individuals and one-off projects.',
+    features: [
+      'Unlimited Static QR Codes',
+      'Standard Black & White',
+      'PNG Downloads',
+      'Basic Scan Tracking (24h)',
+    ],
+    mostPopular: false,
+  },
+  {
+    name: 'Pro',
+    id: 'tier-pro',
+    href: '#',
+    priceMonthly: '$12',
+    description: 'Advanced customization and analytics for professionals.',
+    features: [
+      'Unlimited Dynamic QR Codes',
+      'Custom Colors & Logos',
+      'Vector Downloads (SVG, EPS)',
+      'Advanced Analytics & Geolocation',
+      'Remove Watermark',
+    ],
+    mostPopular: true,
+  },
+  {
+    name: 'Enterprise',
+    id: 'tier-enterprise',
+    href: '#',
+    priceMonthly: '$49',
+    description: 'Dedicated support and infrastructure for large teams.',
+    features: [
+      'Everything in Pro',
+      'Bulk Generation API',
+      'Custom Domains (White Label)',
+      'Team Management',
+      'Dedicated Success Manager',
+    ],
+    mostPopular: false,
+  },
+];
+
+function CheckIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M20 6L9 17l-5-5"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export default function Home() {
   const { user } = useAuth();
@@ -131,6 +192,7 @@ export default function Home() {
               )}
             </button>
             <a href="#api" className="hidden sm:block text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">API</a>
+            <a href="#pricing" className="hidden sm:block text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">PRICING</a>
             <UserMenu />
           </div>
         </div>
@@ -448,6 +510,82 @@ export default function Home() {
               </div>
             </div>
 
+          </div>
+        </div>
+
+        {/* Pricing Section */}
+        <div id="pricing" className="max-w-6xl mx-auto mt-16 lg:mt-32">
+          <div className="mx-auto max-w-4xl text-center">
+            <h2 className="text-base font-semibold leading-7 text-indigo-600 dark:text-indigo-400">Pricing</h2>
+            <p className="mt-2 text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 sm:text-5xl">
+              Choose the right plan for your QR needs
+            </p>
+          </div>
+          <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-neutral-600 dark:text-neutral-400">
+            Whether you just need a quick link or a full-scale marketing campaign, we have a plan that fits.
+          </p>
+
+          <div className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3">
+            {tiers.map((tier, tierIdx) => (
+              <div
+                key={tier.id}
+                className={`flex flex-col justify-between rounded-3xl bg-white dark:bg-neutral-900 p-8 ring-1 xl:p-10 ${tier.mostPopular
+                  ? 'relative z-10 ring-2 ring-indigo-600 dark:ring-indigo-500 shadow-xl lg:scale-105'
+                  : 'ring-neutral-200 dark:ring-neutral-800 lg:mt-8 lg:rounded-t-none lg:rounded-b-none lg:first:rounded-l-3xl lg:first:rounded-r-none lg:last:rounded-l-none lg:last:rounded-r-3xl'
+                  }`}
+              >
+                {tier.mostPopular && (
+                  <div className="absolute -top-5 left-0 right-0 mx-auto w-32 rounded-full bg-indigo-600 px-3 py-1 text-center text-sm font-medium text-white ring-1 ring-inset ring-indigo-600">
+                    Most popular
+                  </div>
+                )}
+
+                <div>
+                  <div className="flex items-center justify-between gap-x-4">
+                    <h3
+                      id={tier.id}
+                      className={`text-lg font-semibold leading-8 ${tier.mostPopular ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-900 dark:text-neutral-100'
+                        }`}
+                    >
+                      {tier.name}
+                    </h3>
+                  </div>
+                  <p className="mt-4 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
+                    {tier.description}
+                  </p>
+                  <p className="mt-6 flex items-baseline gap-x-1">
+                    <span className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                      {tier.priceMonthly}
+                    </span>
+                    <span className="text-sm font-semibold leading-6 text-neutral-600 dark:text-neutral-400">
+                      /month
+                    </span>
+                  </p>
+                  <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
+                    {tier.features.map((feature) => (
+                      <li key={feature} className="flex gap-x-3">
+                        <CheckIcon
+                          className={`h-6 w-5 flex-none ${tier.mostPopular ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-500'
+                            }`}
+                          aria-hidden="true"
+                        />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <a
+                  href={tier.href}
+                  aria-describedby={tier.id}
+                  className={`mt-8 block rounded-xl px-3 py-2 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-offset-2 ${tier.mostPopular
+                    ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-indigo-600'
+                    : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-200 dark:bg-white/10 dark:text-neutral-100 dark:hover:bg-white/20 focus-visible:outline-white'
+                    }`}
+                >
+                  Get started
+                </a>
+              </div>
+            ))}
           </div>
         </div>
 

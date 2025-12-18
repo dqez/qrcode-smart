@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <h1>Hello</h1>
+  <img id="qrcode-smart" src="" alt="qrcode-smart">
+  <script>
+    const currentUrl = window.location.href;
+    document.getElementById("qrcode-smart").src = `https://qrcode-smart.vercel.app/api/og?content=${currentUrl}&bg=F3F4F6&dark=2563EB`;
+  </script>
+</body>
+
+</html>
