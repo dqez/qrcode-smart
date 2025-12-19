@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
@@ -115,8 +116,8 @@ export default function DashboardPage() {
               ) : (
                 qrCodes.slice(0, 5).map((item) => (
                   <tr key={item.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-neutral-900 dark:text-white truncate max-w-[200px]">{item.name || 'Untitled'}</td>
-                    <td className="px-6 py-4 text-neutral-500 dark:text-neutral-400 truncate max-w-[200px]">
+                    <td className="px-6 py-4 font-medium text-neutral-900 dark:text-white truncate max-w-50">{item.name || 'Untitled'}</td>
+                    <td className="px-6 py-4 text-neutral-500 dark:text-neutral-400 truncate max-w-50">
                       {item.content}
                     </td>
                     <td className="px-6 py-4 text-neutral-500 dark:text-neutral-400">
