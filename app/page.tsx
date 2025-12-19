@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { UserMenu } from "@/components/UserMenu";
 import { useAuth } from "@/context/AuthContext";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const tiers = [
   {
@@ -75,6 +77,7 @@ export default function Home() {
   const [qrSrc, setQrSrc] = useState('');
   const [shareLink, setShareLink] = useState('');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [base64NoPadding, setBase64NoPadding] = useState('');
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -159,6 +162,37 @@ export default function Home() {
       alert('Copied Link (Image copy not supported)');
     }
   };
+  const saveToDashboard = async () => {
+    if (!user || !input) return;
+    setSaving(true);
+    try {
+      const docRef = await addDoc(collection(db, "qrcodes"), {
+        userId: user.uid,
+        content: input,
+        base64: base64NoPadding,
+        createdAt: serverTimestamp(),
+        viewCount: 0,
+        status: 'active',
+        name: input.length > 20 ? input.substring(0, 20) + '...' : input,
+        qrOptions: {
+          dark: qrDarkColor,
+          light: qrLightColor
+        }
+      });
+
+      // Update share link with ID
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const newShareLink = `${origin}/share/${base64NoPadding}?id=${docRef.id}`;
+      setShareLink(newShareLink);
+      alert("Saved to Dashboard! Share link updated for tracking.");
+    } catch (error) {
+      console.error("Error saving to dashboard:", error);
+      alert("Failed to save.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
 
   if (!mounted) return null;
 
@@ -377,6 +411,24 @@ export default function Home() {
                             </div>
                           </div>
                         )}
+
+                        {user && (
+                          <button
+                            onClick={saveToDashboard}
+                            disabled={saving}
+                            className="col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
+                          >
+                            {saving ? (
+                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                            )}
+                            {saving ? 'Saving...' : 'Save & Track'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -526,7 +578,7 @@ export default function Home() {
           </p>
 
           <div className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-            {tiers.map((tier, tierIdx) => (
+            {tiers.map((tier) => (
               <div
                 key={tier.id}
                 className={`flex flex-col justify-between rounded-3xl bg-white dark:bg-neutral-900 p-8 ring-1 xl:p-10 ${tier.mostPopular

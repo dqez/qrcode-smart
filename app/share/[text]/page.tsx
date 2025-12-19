@@ -1,9 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 import QRCode from "qrcode";
 import Link from "next/link";
+import { ViewTracker } from "@/components/ViewTracker";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 type Props = {
   params: Promise<{ text: string }>;
+  searchParams: Promise<{ id?: string }>;
 };
 
 export async function generateMetadata(props: Props) {
@@ -31,20 +35,61 @@ export async function generateMetadata(props: Props) {
 
 export default async function SharePage(props: Props) {
   const params = await props.params;
-  const decodedText = Buffer.from(params.text, 'base64').toString('utf-8');
+  const searchParams = await props.searchParams;
+  const textParam = params.text;
+
+  let content = '';
+  let qrId = searchParams.id; // Keep backward compatibility for ?id=
+  let qrOptions = { dark: '#000000', light: '#ffffff' };
+
+  // 1. Try to fetch from Firestore (assuming textParam is an ID)
+  try {
+    const docRef = doc(db, "qrcodes", textParam);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      content = data.content;
+      qrId = docSnap.id; // Found ID from path
+      if (data.qrOptions) {
+        qrOptions = data.qrOptions;
+      }
+    }
+  } catch (e) {
+    // Ignore error, might not be an ID or permission issue
+    console.log("Not a valid ID or DB error", e);
+  }
+
+  // 2. If not found in DB, try Base64 decode
+  if (!content) {
+    try {
+      content = Buffer.from(textParam, 'base64').toString('utf-8');
+    } catch (e) {
+      console.log("Not a valid base64", e);
+    }
+  }
+
+  if (!content) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans p-4">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">404</h1>
+          <p className="text-lg text-neutral-500 mb-8">QR Code not found or expired.</p>
+          <Link href="/" className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium">Go Home</Link>
+        </div>
+      </div>
+    );
+  }
 
   // Generate high-res QR for display
-  const qrDataUrl = await QRCode.toDataURL(decodedText, {
+  const qrDataUrl = await QRCode.toDataURL(content, {
     width: 600,
     margin: 2,
-    color: {
-      dark: '#000000',
-      light: '#ffffff'
-    }
+    color: qrOptions
   });
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans p-4">
+      {qrId && <ViewTracker qrId={qrId} />}
 
       <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
         <div className="bg-white dark:bg-neutral-900 p-8 rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-800 flex flex-col items-center relative overflow-hidden">
