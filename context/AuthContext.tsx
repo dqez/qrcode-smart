@@ -9,11 +9,13 @@ import {
   onAuthStateChanged,
   getRedirectResult
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
+import { UserProfile } from "@/types/user";
 
 interface AuthContextType {
   user: User | null;
+  userProfile: UserProfile | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Hàm xử lý lưu user vào Firestore (Tách riêng để tái sử dụng)
@@ -37,13 +40,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: user.email,
           displayName: user.displayName,
           photoURL: user.photoURL,
+          credits: 5, // Default credits for new users
+          tier: 'free',
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
         });
       } else {
-        await setDoc(userRef, {
+        // Logic update cho user cũ chưa có credits hoặc tier
+        const userData = userSnap.data();
+        const updates: any = {
           lastLogin: serverTimestamp(),
-        }, { merge: true });
+        };
+
+        if (userData && typeof userData.credits === 'undefined') {
+          updates.credits = 5; // Tặng 5 credits cho user cũ
+        }
+
+        if (userData && !userData.tier) {
+          updates.tier = 'free'; // Mặc định là free nếu chưa có tier
+        }
+
+        await setDoc(userRef, updates, { merge: true });
       }
     } catch (error) {
       console.error("Error saving user to Firestore:", error);
@@ -54,10 +71,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 1. Lắng nghe trạng thái đăng nhập
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if (!currentUser) {
+        setUserProfile(null);
+        setLoading(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to user profile changes
+  useEffect(() => {
+    if (!user) return;
+
+    const userRef = doc(db, "users", user.uid);
+    const unsubscribeProfile = onSnapshot(userRef, (doc) => {
+      if (doc.exists()) {
+        setUserProfile(doc.data() as UserProfile);
+      } else {
+        // Fallback if document doesn't exist yet (rare race condition)
+        setUserProfile(null);
+      }
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching user profile:", error);
       setLoading(false);
     });
 
-    // 2. Xử lý kết quả trả về nếu dùng signInWithRedirect (Cho Mobile)
+    return () => unsubscribeProfile();
+  }, [user]);
+
+  // 2. Xử lý kết quả trả về nếu dùng signInWithRedirect (Cho Mobile)
+  useEffect(() => {
     getRedirectResult(auth)
       .then((result) => {
         if (result) {
@@ -68,8 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch((error) => {
         console.error("Error with redirect login:", error);
       });
-
-    return () => unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {
@@ -102,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, signInWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );
