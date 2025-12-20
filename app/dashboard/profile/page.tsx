@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import DomainManager from "@/components/DomainManager";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
@@ -21,9 +21,34 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{user?.displayName}</h2>
             <p className="text-neutral-500 dark:text-neutral-400">{user?.email}</p>
-            <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-              Free Plan
-            </div>
+            {userProfile?.tier && (
+              (() => {
+                // 1. Định nghĩa bảng màu cho từng loại
+                const config = {
+                  free: {
+                    label: 'Free',
+                    classes: 'text-neutral-600 bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400',
+                  },
+                  pro: {
+                    label: 'Pro',
+                    classes: 'text-amber-800 bg-linear-to-r from-amber-200 to-orange-200 shadow',
+                  },
+                  enterprise: {
+                    label: 'Enterprise',
+                    classes: 'text-purple-800 bg-linear-to-r from-purple-200 to-indigo-200 shadow',
+                  },
+                };
+
+                // 2. Lấy config dựa trên tier hiện tại (fallback về free nếu không khớp)
+                const currentTier = config[userProfile.tier] || config.free;
+
+                return (
+                  <div className={`inline-block text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide ${currentTier.classes}`}>
+                    {currentTier.label} Plan
+                  </div>
+                );
+              })()
+            )}
           </div>
         </div>
 

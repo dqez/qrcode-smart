@@ -6,7 +6,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 export function UserMenu() {
-  const { user, signInWithGoogle, logout } = useAuth();
+  const { user, userProfile, signInWithGoogle, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   // 1. Giao diện khi CHƯA đăng nhập
@@ -58,6 +58,42 @@ export function UserMenu() {
             <div className="px-4 py-3 text-sm text-neutral-700 dark:text-neutral-200 border-b border-neutral-200 dark:border-neutral-800">
               <p className="font-medium truncate">{user.displayName}</p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-0.5">{user.email}</p>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1 rounded-md w-fit">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.732 6.232a2.5 2.5 0 013.536 0 .75.75 0 101.06-1.06A4 4 0 006.5 8v.165c0 .364.034.728.1 1.085h-.35a.75.75 0 000 1.5h.737a5.25 5.25 0 01-.367 3.072.75.75 0 001.42.492 3.75 3.75 0 00.256-1.427h1.408a.75.75 0 000-1.5h-1.2a5.25 5.25 0 01.1-1.085c.044-.22.15-.423.305-.585z" clipRule="evenodd" />
+                  </svg>
+                  {userProfile?.credits ?? 0} Credits
+                </div>
+                {userProfile?.tier && (
+                  (() => {
+                    // 1. Định nghĩa bảng màu cho từng loại
+                    const config = {
+                      free: {
+                        label: 'Free',
+                        classes: 'text-neutral-600 bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400',
+                      },
+                      pro: {
+                        label: 'Pro',
+                        classes: 'text-amber-800 bg-linear-to-r from-amber-200 to-orange-200 shadow',
+                      },
+                      enterprise: {
+                        label: 'Enterprise',
+                        classes: 'text-purple-800 bg-linear-to-r from-purple-200 to-indigo-200 shadow',
+                      },
+                    };
+
+                    // 2. Lấy config dựa trên tier hiện tại (fallback về free nếu không khớp)
+                    const currentTier = config[userProfile.tier] || config.free;
+
+                    return (
+                      <div className={`inline-block text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide ${currentTier.classes}`}>
+                        {currentTier.label}
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
             </div>
 
             <Link

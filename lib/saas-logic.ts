@@ -1,5 +1,4 @@
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { dbAdmin } from "@/lib/firebase-admin";
 
 /**
  * Checks if the referer/origin domain is allowed by querying Firestore.
@@ -24,18 +23,16 @@ export async function checkDomainAllowed(refererOrOrigin: string | null): Promis
     console.log("Parsed HostWithPort:", hostWithPort);
     console.log("Parsed HostnameOnly:", hostnameOnly);
 
-    // 2. Query Firestore
-    const domainsRef = collection(db, "domains");
+    // 2. Query Firestore using Admin SDK
+    const domainsRef = dbAdmin.collection("domains");
 
     // Check 1: Exact match (with port)
-    const q1 = query(domainsRef, where("domain", "==", hostWithPort));
-    const snapshot1 = await getDocs(q1);
+    const snapshot1 = await domainsRef.where("domain", "==", hostWithPort).get();
     console.log("Check 1 (Exact) found:", !snapshot1.empty);
     if (!snapshot1.empty) return true;
 
     // Check 2: Hostname match (without port) - Allow any port
-    const q2 = query(domainsRef, where("domain", "==", hostnameOnly));
-    const snapshot2 = await getDocs(q2);
+    const snapshot2 = await domainsRef.where("domain", "==", hostnameOnly).get();
     console.log("Check 2 (Hostname) found:", !snapshot2.empty);
     return !snapshot2.empty;
   } catch (error) {

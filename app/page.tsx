@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 "use client"
 
@@ -9,6 +10,8 @@ import { UserMenu } from "@/components/UserMenu";
 import { useAuth } from "@/context/AuthContext";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { checkAndDeductCredits } from "@/lib/billing";
+import PaymentModal from "@/components/PaymentModal";
 
 const tiers = [
   {
@@ -16,6 +19,9 @@ const tiers = [
     id: 'tier-free',
     href: '#',
     priceMonthly: '$0',
+    price: 0,
+    credits: 0,
+    tierId: 'free',
     description: 'Perfect for individuals and one-off projects.',
     features: [
       'Unlimited Static QR Codes',
@@ -29,7 +35,10 @@ const tiers = [
     name: 'Pro',
     id: 'tier-pro',
     href: '#',
-    priceMonthly: '$12',
+    priceMonthly: '2.000đ',
+    price: 2000,
+    credits: 100,
+    tierId: 'pro',
     description: 'Advanced customization and analytics for professionals.',
     features: [
       'Unlimited Dynamic QR Codes',
@@ -44,7 +53,10 @@ const tiers = [
     name: 'Enterprise',
     id: 'tier-enterprise',
     href: '#',
-    priceMonthly: '$49',
+    priceMonthly: '3.000đ',
+    price: 3000,
+    credits: 500,
+    tierId: 'enterprise',
     description: 'Dedicated support and infrastructure for large teams.',
     features: [
       'Everything in Pro',
@@ -72,7 +84,7 @@ function CheckIcon(props: SVGProps<SVGSVGElement>) {
 }
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [input, setInput] = useState('');
   const [qrSrc, setQrSrc] = useState('');
   const [shareLink, setShareLink] = useState('');
@@ -85,6 +97,9 @@ export default function Home() {
   // QR Code Colors
   const [qrDarkColor, setQrDarkColor] = useState('#000000');
   const [qrLightColor, setQrLightColor] = useState('#ffffff');
+
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -166,6 +181,14 @@ export default function Home() {
     if (!user || !input) return;
     setSaving(true);
     try {
+      // Check and deduct credits (Cost: 1 credit)
+      const hasCredits = await checkAndDeductCredits(user.uid, 1);
+      if (!hasCredits) {
+        alert("Insufficient credits! Please upgrade your plan or buy more credits.");
+        setSaving(false);
+        return;
+      }
+
       const docRef = await addDoc(collection(db, "qrcodes"), {
         userId: user.uid,
         content: input,
@@ -184,13 +207,28 @@ export default function Home() {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const newShareLink = `${origin}/share/${base64NoPadding}?id=${docRef.id}`;
       setShareLink(newShareLink);
-      alert("Saved to Dashboard! Share link updated for tracking.");
+      alert("Saved to Dashboard! Share link updated for tracking. (1 Credit Deducted)");
     } catch (error) {
       console.error("Error saving to dashboard:", error);
       alert("Failed to save.");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleUpgrade = (tier: any) => {
+    if (!user) {
+      alert("Please sign in to upgrade.");
+      return;
+    }
+
+    if (tier.price === 0) {
+      alert("You are already on the Free plan.");
+      return;
+    }
+
+    setSelectedTier(tier);
+    setIsPaymentModalOpen(true);
   };
 
 
@@ -416,8 +454,8 @@ export default function Home() {
                           onClick={saveToDashboard}
                           disabled={saving || !user}
                           className={`col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${user
-                              ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/50"
-                              : "bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-neutral-400 cursor-not-allowed"
+                            ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/50"
+                            : "bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-neutral-400 cursor-not-allowed"
                             }`}
                         >
                           {saving ? (
@@ -574,75 +612,187 @@ export default function Home() {
           <div className="mx-auto max-w-4xl text-center">
             <h2 className="text-base font-semibold leading-7 text-indigo-600 dark:text-indigo-400">Pricing</h2>
             <p className="mt-2 text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 sm:text-5xl">
-              Choose the right plan for your QR needs
+              {userProfile?.tier === 'pro' ? 'Upgrade to Enterprise' : 'Choose the right plan for your QR needs'}
             </p>
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-neutral-600 dark:text-neutral-400">
-            Whether you just need a quick link or a full-scale marketing campaign, we have a plan that fits.
+            {userProfile?.tier === 'pro'
+              ? 'Take your business to the next level with advanced features and dedicated support.'
+              : 'Whether you just need a quick link or a full-scale marketing campaign, we have a plan that fits.'}
           </p>
 
-          <div className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-            {tiers.map((tier) => (
-              <div
-                key={tier.id}
-                className={`flex flex-col justify-between rounded-3xl bg-white dark:bg-neutral-900 p-8 ring-1 xl:p-10 ${tier.mostPopular
-                  ? 'relative z-10 ring-2 ring-indigo-600 dark:ring-indigo-500 shadow-xl lg:scale-105'
-                  : 'ring-neutral-200 dark:ring-neutral-800 lg:mt-8 lg:rounded-t-none lg:rounded-b-none lg:first:rounded-l-3xl lg:first:rounded-r-none lg:last:rounded-l-none lg:last:rounded-r-3xl'
-                  }`}
-              >
-                {tier.mostPopular && (
-                  <div className="absolute -top-5 left-0 right-0 mx-auto w-32 rounded-full bg-indigo-600 px-3 py-1 text-center text-sm font-medium text-white ring-1 ring-inset ring-indigo-600">
-                    Most popular
-                  </div>
-                )}
+          {/* Current Plan Badge */}
+          {userProfile?.tier && userProfile.tier !== 'free' && (
+            <div className="flex justify-center mt-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-linear-to-r from-indigo-500 to-violet-500 text-white text-sm font-semibold shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                </svg>
+                Current Plan: {userProfile.tier.toUpperCase()}
+              </div>
+            </div>
+          )}
 
-                <div>
-                  <div className="flex items-center justify-between gap-x-4">
-                    <h3
-                      id={tier.id}
-                      className={`text-lg font-semibold leading-8 ${tier.mostPopular ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-900 dark:text-neutral-100'
-                        }`}
-                    >
-                      {tier.name}
-                    </h3>
-                  </div>
-                  <p className="mt-4 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
-                    {tier.description}
-                  </p>
-                  <p className="mt-6 flex items-baseline gap-x-1">
-                    <span className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                      {tier.priceMonthly}
-                    </span>
-                    <span className="text-sm font-semibold leading-6 text-neutral-600 dark:text-neutral-400">
-                      /month
-                    </span>
-                  </p>
-                  <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
-                    {tier.features.map((feature) => (
-                      <li key={feature} className="flex gap-x-3">
-                        <CheckIcon
-                          className={`h-6 w-5 flex-none ${tier.mostPopular ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-500'
+          <div className={`isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20 lg:mx-0 lg:max-w-none ${userProfile?.tier === 'pro' ? 'justify-center lg:max-w-4xl' : 'lg:grid-cols-3'
+            }`}>
+            {tiers
+              .filter((tier) => {
+                // Nếu chưa đăng nhập hoặc đang free -> hiển thị tất cả
+                if (!userProfile || userProfile.tier === 'free') return true;
+                // Nếu đang pro -> chỉ hiển thị Enterprise
+                if (userProfile.tier === 'pro') return tier.tierId === 'enterprise';
+                // Nếu đang enterprise -> không hiển thị gì (đã max)
+                if (userProfile.tier === 'enterprise') return false;
+                return true;
+              })
+              .map((tier) => {
+                const isCurrentPlan = userProfile?.tier === tier.tierId;
+                const isDowngrade = userProfile?.tier === 'enterprise' && tier.tierId !== 'enterprise';
+                const isUpgradeToEnterprise = userProfile?.tier === 'pro' && tier.tierId === 'enterprise';
+
+                return (
+                  <div
+                    key={tier.id}
+                    className={`rounded-3xl bg-white dark:bg-neutral-900 p-8 ring-1 xl:p-10 ${isUpgradeToEnterprise
+                      ? 'ring-2 ring-indigo-600 dark:ring-indigo-500 shadow-2xl lg:flex lg:items-center lg:gap-x-10'
+                      : `flex flex-col justify-between ${tier.mostPopular && !isCurrentPlan
+                        ? 'relative z-10 ring-2 ring-indigo-600 dark:ring-indigo-500 shadow-xl lg:scale-105'
+                        : isCurrentPlan
+                          ? 'ring-2 ring-green-500 dark:ring-green-400 shadow-lg'
+                          : 'ring-neutral-200 dark:ring-neutral-800 lg:mt-8 lg:rounded-t-none lg:rounded-b-none lg:first:rounded-l-3xl lg:first:rounded-r-none lg:last:rounded-l-none lg:last:rounded-r-3xl'
+                      }`
+                      }`}
+                  >
+                    {tier.mostPopular && !isCurrentPlan && !isUpgradeToEnterprise && (
+                      <div className="absolute -top-5 left-0 right-0 mx-auto w-32 rounded-full bg-indigo-600 px-3 py-1 text-center text-sm font-medium text-white ring-1 ring-inset ring-indigo-600">
+                        Most popular
+                      </div>
+                    )}
+
+                    {isCurrentPlan && (
+                      <div className="absolute -top-5 left-0 right-0 mx-auto w-32 rounded-full bg-green-600 px-3 py-1 text-center text-sm font-medium text-white ring-1 ring-inset ring-green-600">
+                        Current Plan
+                      </div>
+                    )}
+
+                    <div className={isUpgradeToEnterprise ? 'lg:flex-1' : ''}>
+                      <div className="flex items-center justify-between gap-x-4">
+                        <h3
+                          id={tier.id}
+                          className={`text-lg font-semibold leading-8 ${isCurrentPlan
+                            ? 'text-green-600 dark:text-green-400'
+                            : tier.mostPopular || isUpgradeToEnterprise
+                              ? 'text-indigo-600 dark:text-indigo-400'
+                              : 'text-neutral-900 dark:text-neutral-100'
                             }`}
-                          aria-hidden="true"
-                        />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
+                        >
+                          {tier.name}
+                        </h3>
+                        {isUpgradeToEnterprise && (
+                          <span className="rounded-full bg-indigo-600/10 px-2.5 py-1 text-xs font-semibold leading-5 text-indigo-600 dark:text-indigo-400">Recommended</span>
+                        )}
+                      </div>
+                      <p className="mt-4 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
+                        {tier.description}
+                      </p>
+                      <p className="mt-6 flex items-baseline gap-x-1">
+                        <span className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                          {tier.priceMonthly}
+                        </span>
+                        <span className="text-sm font-semibold leading-6 text-neutral-600 dark:text-neutral-400">
+                          /month
+                        </span>
+                      </p>
+
+                      {!isUpgradeToEnterprise && (
+                        <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
+                          {tier.features.map((feature) => (
+                            <li key={feature} className="flex gap-x-3">
+                              <CheckIcon
+                                className={`h-6 w-5 flex-none ${isCurrentPlan
+                                  ? 'text-green-600 dark:text-green-400'
+                                  : tier.mostPopular
+                                    ? 'text-indigo-600 dark:text-indigo-400'
+                                    : 'text-neutral-500'
+                                  }`}
+                                aria-hidden="true"
+                              />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    {isUpgradeToEnterprise && (
+                      <div className="mt-8 lg:mt-0 lg:flex-1 lg:border-l lg:border-neutral-200 lg:dark:border-neutral-800 lg:pl-10">
+                        <ul role="list" className="space-y-3 text-sm leading-6 text-neutral-600 dark:text-neutral-400 grid sm:grid-cols-2 gap-x-6 gap-y-1">
+                          {tier.features.map((feature) => (
+                            <li key={feature} className="flex gap-x-3">
+                              <CheckIcon
+                                className="h-6 w-5 flex-none text-indigo-600 dark:text-indigo-400"
+                                aria-hidden="true"
+                              />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                        <button
+                          onClick={() => handleUpgrade(tier)}
+                          aria-describedby={tier.id}
+                          className="mt-8 block w-full rounded-xl px-3 py-3 text-center text-sm font-semibold leading-6 text-white shadow-sm bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all"
+                        >
+                          Upgrade to {tier.name}
+                        </button>
+                      </div>
+                    )}
+
+                    {!isUpgradeToEnterprise && (
+                      <button
+                        onClick={() => handleUpgrade(tier)}
+                        disabled={isCurrentPlan || isDowngrade}
+                        aria-describedby={tier.id}
+                        className={`mt-8 block w-full rounded-xl px-3 py-2 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-offset-2 transition-all ${isCurrentPlan
+                          ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 cursor-not-allowed'
+                          : tier.mostPopular
+                            ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-indigo-600'
+                            : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-200 dark:bg-white/10 dark:text-neutral-100 dark:hover:bg-white/20 focus-visible:outline-white'
+                          }`}
+                      >
+                        {isCurrentPlan ? 'Current Plan' : tier.price === 0 ? 'Get started' : `Upgrade to ${tier.name}`}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+
+          {/* Message khi đã Enterprise */}
+          {userProfile?.tier === 'enterprise' && (
+            <div className="mt-12 text-center">
+              <div className="inline-flex flex-col items-center gap-4 p-8 rounded-2xl bg-linear-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border border-indigo-100 dark:border-indigo-800/50">
+                <div className="w-16 h-16 rounded-full bg-linear-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+                    <path fillRule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3.071.543a.75.75 0 00-.584.859 6.753 6.753 0 006.138 5.6 6.73 6.73 0 002.743 1.346A6.707 6.707 0 019.279 15H8.54c-1.036 0-1.875.84-1.875 1.875V19.5h-.75a2.25 2.25 0 00-2.25 2.25c0 .414.336.75.75.75h15a.75.75 0 00.75-.75 2.25 2.25 0 00-2.25-2.25h-.75v-2.625c0-1.036-.84-1.875-1.875-1.875h-.739a6.706 6.706 0 01-1.112-3.173 6.73 6.73 0 002.743-1.347 6.753 6.753 0 006.139-5.6.75.75 0 00-.585-.858 47.077 47.077 0 00-3.07-.543V2.62a.75.75 0 00-.658-.744 49.22 49.22 0 00-6.093-.377c-2.063 0-4.096.128-6.093.377a.75.75 0 00-.657.744zm0 2.629c0 1.196.312 2.32.857 3.294A5.266 5.266 0 013.16 5.337a45.6 45.6 0 012.006-.343v.256zm13.5 0v-.256c.674.1 1.343.214 2.006.343a5.265 5.265 0 01-2.863 3.207 6.72 6.72 0 00.857-3.294z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+                    You&apos;re on the best plan!
+                  </h3>
+                  <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+                    You have access to all premium features. Need custom solutions? Contact our team.
+                  </p>
                 </div>
                 <a
-                  href={tier.href}
-                  aria-describedby={tier.id}
-                  className={`mt-8 block rounded-xl px-3 py-2 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-offset-2 ${tier.mostPopular
-                    ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-indigo-600'
-                    : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-200 dark:bg-white/10 dark:text-neutral-100 dark:hover:bg-white/20 focus-visible:outline-white'
-                    }`}
+                  href="mailto:support@qrcode-smart.com"
+                  className="mt-2 px-6 py-2.5 bg-linear-to-r from-indigo-600 to-violet-600 text-white rounded-lg font-medium hover:from-indigo-500 hover:to-violet-500 transition-all shadow-md"
                 >
-                  Get started
+                  Contact Sales
                 </a>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* API Section */}
@@ -743,6 +893,16 @@ export default function Home() {
       <footer className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-600 border-t border-neutral-200 dark:border-neutral-800">
         <p>&copy; {new Date().getFullYear()} QRCode Smart. Built for the modern web. | <a href="http://github.com/dqez">ZEQ</a></p>
       </footer>
+
+      {selectedTier && user && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          closeModal={() => setIsPaymentModalOpen(false)}
+          planName={selectedTier.name}
+          amount={selectedTier.price}
+          userId={user.uid}
+        />
+      )}
     </div>
   );
 }
