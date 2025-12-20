@@ -159,55 +159,67 @@ export default function Home() {
     document.body.removeChild(link);
   };
 
-  const copySmart = async () => {
-    if (!shareLink || !qrSrc) return;
+  const copySmart = async (linkOverride?: string | any) => {
+    const linkToCopy = typeof linkOverride === 'string' ? linkOverride : shareLink;
+    if (!linkToCopy || !qrSrc) return;
 
     try {
       const imgBlob = await fetch(qrSrc).then((r) => r.blob());
-      const textBlob = new Blob([shareLink], { type: 'text/plain' });
+      const textBlob = new Blob([linkToCopy], { type: 'text/plain' });
       const item = new ClipboardItem({
         'text/plain': textBlob,
         'image/png': imgBlob,
       });
       await navigator.clipboard.write([item]);
-      alert('Copied Link & Image to clipboard!');
+      if (typeof linkOverride !== 'string') alert('Copied Link & Image to clipboard!');
     } catch (err) {
       console.error('Smart copy failed:', err);
-      navigator.clipboard.writeText(shareLink);
-      alert('Copied Link (Image copy not supported)');
+      navigator.clipboard.writeText(linkToCopy);
+      if (typeof linkOverride !== 'string') alert('Copied Link (Image copy not supported)');
     }
   };
   const saveToDashboard = async () => {
     if (!user || !input) return;
     setSaving(true);
     try {
-      // Check and deduct credits (Cost: 1 credit)
-      const hasCredits = await checkAndDeductCredits(user.uid, 1);
-      if (!hasCredits) {
-        alert("Insufficient credits! Please upgrade your plan or buy more credits.");
-        setSaving(false);
+      // Lấy ID Token để gửi lên server xác thực
+      const idToken = await user.getIdToken();
+
+      const response = await fetch('/api/save-qr', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          content: input,
+          base64: base64NoPadding,
+          name: input.length > 20 ? input.substring(0, 20) + '...' : input,
+          qrOptions: {
+            dark: qrDarkColor,
+            light: qrLightColor
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 402) {
+          alert("Insufficient credits! Please upgrade your plan or buy more credits.");
+        } else {
+          throw new Error(data.error || "Failed to save");
+        }
         return;
       }
 
-      const docRef = await addDoc(collection(db, "qrcodes"), {
-        userId: user.uid,
-        content: input,
-        base64: base64NoPadding,
-        createdAt: serverTimestamp(),
-        viewCount: 0,
-        status: 'active',
-        name: input.length > 20 ? input.substring(0, 20) + '...' : input,
-        qrOptions: {
-          dark: qrDarkColor,
-          light: qrLightColor
-        }
-      });
-
       // Update share link with ID
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const newShareLink = `${origin}/share/${base64NoPadding}?id=${docRef.id}`;
+      const newShareLink = `${origin}/share/${data.id}`;
       setShareLink(newShareLink);
-      alert("Saved to Dashboard! Share link updated for tracking. (1 Credit Deducted)");
+
+      await copySmart(newShareLink);
+      alert("Saved to Dashboard & Copied to Clipboard! (1 Credit Deducted)");
     } catch (error) {
       console.error("Error saving to dashboard:", error);
       alert("Failed to save.");
@@ -466,7 +478,7 @@ export default function Home() {
                           ) : (
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                           )}
-                          {saving ? 'Saving...' : 'Save & Track'}
+                          {saving ? 'Saving...' : 'Save, Track & Smart Copy'}
                           {!user && (
                             <span className="text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-500 px-1.5 py-0.5 rounded ml-1">SIGN IN</span>
                           )}
