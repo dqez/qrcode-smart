@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { Dialog, Transition } from '@headlessui/react'
-import { Fragment } from 'react'
+import { Fragment, useEffect } from 'react'
+import { useAuth } from '@/context/AuthContext';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -11,11 +12,25 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ isOpen, closeModal, planName, amount, userId }: PaymentModalProps) {
+  const { userProfile } = useAuth();
   const transferContent = `SEVQR ${userId}`;
   // Using SePay's QR generator format: https://qr.sepay.vn/img?acc=SO_TK&bank=TEN_NH&amount=SO_TIEN&des=NOI_DUNG
   const bankAccount = "101877455638"; // Example
   const bankName = "VietinBank"; // Example
   const qrUrl = `https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankName}&amount=${amount}&des=${transferContent}`;
+
+  // Tự động đóng modal khi userProfile thay đổi (được nâng cấp)
+  useEffect(() => {
+    if (isOpen && userProfile) {
+      // Kiểm tra xem user đã được nâng cấp lên gói tương ứng chưa
+      // Lưu ý: Logic này giả định planName map với tierId (Pro -> pro, Enterprise -> enterprise)
+      const targetTier = planName.toLowerCase();
+      if (userProfile.tier === targetTier) {
+        closeModal();
+        alert(`Upgrade successful! You are now on ${planName} plan.`);
+      }
+    }
+  }, [userProfile, isOpen, planName, closeModal]);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
