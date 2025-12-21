@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QRCode Smart
 
-## Getting Started
+The smartest way to share links. Generate QR codes that come with beautiful social preview cards. Perfect for sharing on Twitter, LinkedIn, and Discord.
 
-First, run the development server:
+![Project Screenshot](/public/screenshot.jpeg)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Instant Generation**: Real-time QR code generation as you type.
+- **Customization**: Customize QR code colors (dots and background).
+- **Smart Clipboard**: Copy both the QR image and the share link simultaneously.
+- **Social Previews**: Links shared on social media automatically generate a preview card containing your QR code.
+- **Save & Track**: Authenticated users can save QR codes to their dashboard and track scans (Credit based).
+- **Pricing Tiers**: Free, Pro, and Enterprise plans with different feature sets and credit limits.
+- **Dark/Light Mode**: Fully responsive design with dark mode support.
+- **Download**: Download QR codes as PNG.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Authentication**: [Firebase Auth](https://firebase.google.com/docs/auth)
+- **Database**: [Firebase Firestore](https://firebase.google.com/docs/firestore)
+- **QR Code**: [node-qrcode](https://github.com/soldair/node-qrcode)
+- **UI Components**: [Headless UI](https://headlessui.com/)
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[dqez](https://github.com/dqez)
